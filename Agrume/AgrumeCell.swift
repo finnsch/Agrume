@@ -133,28 +133,30 @@ extension AgrumeCell: UIGestureRecognizerDelegate {
 
   @objc private func doubleTap(sender: UITapGestureRecognizer) {
     let point = scrollView.convertPoint(sender.locationInView(sender.view), fromView: sender.view)
-    let targetZoom: CGRect
-    let targetInsets: UIEdgeInsets
+    
     if notZoomed() {
-      let zoomWidth = contentView.bounds.width / AgrumeCell.TargetZoomForDoubleTap
-      let zoomHeight = contentView.bounds.height / AgrumeCell.TargetZoomForDoubleTap
-      targetZoom = CGRect(x: point.x - zoomWidth / 2, y: point.y / zoomWidth / 2, width: zoomWidth, height: zoomHeight)
-      targetInsets = contentInsetForScrollView(atScale: AgrumeCell.TargetZoomForDoubleTap)
+      zoomToPoint(point, scale: AgrumeCell.TargetZoomForDoubleTap)
     } else {
-      let zoomWidth = contentView.bounds.width * scrollView.zoomScale
-      let zoomHeight = contentView.bounds.height * scrollView.zoomScale
-      targetZoom = CGRect(x: point.x - zoomWidth / 2, y: point.y / zoomWidth / 2, width: zoomWidth, height: zoomHeight)
-      targetInsets = contentInsetForScrollView(atScale: 1)
+      zoomToPoint(.zero, scale: 1)
     }
-
+  }
+  
+  private func zoomToPoint(point: CGPoint, scale: CGFloat) {
+    let factor = 1 / scrollView.zoomScale
+    let translatedZoom = CGPoint(x: (point.x + scrollView.contentOffset.x) * factor,
+                                 y: (point.y + scrollView.contentOffset.y) * factor)
+    
+    let width = scrollView.frame.width / scale
+    let height = scrollView.frame.height / scale
+    let destination = CGRect(x: translatedZoom.x - width  / 2, y: translatedZoom.y - height / 2, width: width, height: height)
+    
     contentView.userInteractionEnabled = false
-
+    
     CATransaction.begin()
     CATransaction.setCompletionBlock { [unowned self] in
-      self.scrollView.contentInset = targetInsets
       self.contentView.userInteractionEnabled = true
     }
-    scrollView.zoomToRect(targetZoom, animated: true)
+    scrollView.zoomToRect(destination, animated: true)
     CATransaction.commit()
   }
 
